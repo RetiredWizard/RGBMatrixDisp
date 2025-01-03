@@ -1,0 +1,1 @@
+A pure Python library for driving HUB75 type RGB Matrix panels. This is still a work in progress but the goal is to provide a graphics functions that will run on CircuitPython or MicroPython for boards that don't have firmware support for RGB Matrix panels.
