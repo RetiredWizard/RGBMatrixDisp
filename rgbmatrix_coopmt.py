@@ -115,12 +115,16 @@ class RGBMatrix:
 
     def sleep(self,seconds,slow=False):
         timerEnd = self._seconds() + seconds
-        while self._seconds() < timerEnd:
-            if not slow:
+        if not slow:
+            while self._seconds() < timerEnd:
                 self.refresh()
-            else:
+        else:
+            while self._seconds() < timerEnd:
                 for row in range(self.rows):
                     self.sendrow(row)
+
+    def off(self):
+        self._OEIO.value = True     # display off
 
     def refresh(self):
         adrline = []
