@@ -124,6 +124,7 @@ class RGBMatrix:
 
     def refresh(self):
         adrline = []
+        self._prevShiftReg1 = None
         for i in range(self._numAddrPins):   # set row to zero
             adrline.append(0)
 
