@@ -61,10 +61,7 @@ class RGBMatrix:
             return adafruit_ticks.monotonic_ns() / 1000000000
 
     def deinit(self):
-        for i in range(self.rows):
-            for j in range(self.cols):
-                self._framebuffer[i][j] = 0
-            self.sendrow(i)
+        self.fill(0)
 
         del self._framebuffer
         del self._prevShiftReg1
@@ -81,6 +78,12 @@ class RGBMatrix:
         for pin in self._unused_rgbIO:
             pin.deinit()
 
+    def fill(self,color):
+        for i in range(self.rows):
+            for j in range(self.cols):
+                self._framebuffer[i][j] = color
+            if color == 0:
+                self.sendrow(i)
 
     def input(self,prompt=None,silent=False):
 
@@ -110,10 +113,14 @@ class RGBMatrix:
 
         return keys[:-1]
 
-    def sleep(self,seconds):
+    def sleep(self,seconds,slow=False):
         timerEnd = self._seconds() + seconds
         while self._seconds() < timerEnd:
-            self.refresh()
+            if not slow:
+                self.refresh()
+            else:
+                for row in range(self.rows):
+                    self.sendrow(row)
 
     def refresh(self):
         adrline = []

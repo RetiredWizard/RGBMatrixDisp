@@ -1,43 +1,57 @@
 import board
 import rgbmatrix_coopmt
 
-addrPins = [
-    board.MTX_ADDRA,
-    board.MTX_ADDRB,
-    board.MTX_ADDRC,
-    board.MTX_ADDRD
-]
+try:
+    addrPins = [
+        board.MTX_ADDRA,
+        board.MTX_ADDRB,
+        board.MTX_ADDRC,
+        board.MTX_ADDRD
+    ]
 
-rgbPins=[
-    board.MTX_R1,
-    board.MTX_G1,
-    board.MTX_B1,
-    board.MTX_R2,
-    board.MTX_G2,
-    board.MTX_B2
-]
+    rgbPins=[
+        board.MTX_R1,
+    #    board.MTX_G1,
+    #    board.MTX_B1,
+        board.MTX_R2,
+    #    board.MTX_G2,
+    #    board.MTX_B2
+    ]
+
+    unused_rgbPins=[
+    #    board.MTX_R1,
+        board.MTX_G1,
+        board.MTX_B1,
+    #    board.MTX_R2,
+        board.MTX_G2,
+        board.MTX_B2
+    ]
+
+    matrix = rgbmatrix_coopmt.RGBMatrix(32,64,0,addrPins,rgbPins,board.MTX_CLK,board.MTX_LAT,board.MTX_OE,unused_rgbPins)
 
 # Teensy 4/4.1 pins
-#addrPins = [
-#    board.D21,
-#    board.D4,
-#    board.D20,
-#    board.D5,
-#    board.D3
-#]
+except:
 
-#rgbPins=[
-#    board.D16,
-#    board.D1,
-#    board.D17,
-#    board.D23,
-#    board.D2,
-#    board.D22
-#]
+    addrPins = [
+        board.D21,
+        board.D4,
+        board.D20,
+        board.D5,
+        board.D3
+    ]
 
+    rgbPins=[
+        board.D16,
+        board.D1,
+        board.D17,
+        board.D23,
+        board.D2,
+        board.D22
+    ]
 
-matrix = rgbmatrix_coopmt.RGBMatrix(32,64,0,addrPins,rgbPins,board.MTX_CLK,board.MTX_LAT,board.MTX_OE)
-#matrix = rgbmatrix_coopmt.RGBMatrix(64,64,0,addrPins,rgbPins,board.D19,board.D6,board.D18)
+    unused_rgbPins = None
+
+    matrix = rgbmatrix_coopmt.RGBMatrix(64,64,0,addrPins,rgbPins,board.D19,board.D6,board.D18)
 
 lines = []
 points = []
