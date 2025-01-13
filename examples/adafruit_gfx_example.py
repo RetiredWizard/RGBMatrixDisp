@@ -34,6 +34,13 @@ if rgbPins == []:
     latchPin = "D6"
     OEPin ="D18"
     unused_rgbPins = None
+# RPi Zero2w
+#    addrPins = ["D27","D25","D9","D24","D8"]
+#    rgbPins=["D4","D1","D3","D2","D7","D17"]
+#    clockPin = "D11"
+#    latchPin = "D23"
+#    OEPin ="D10"
+#    unused_rgbPins = None
 
 rows = 2 ** (len(addrPins)+1)
 display = rgbmatrix_coopmt.RGBMatrix(rows,64,0,addrPins,rgbPins,clockPin,latchPin,OEPin,unused_rgbPins)

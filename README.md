@@ -1,4 +1,4 @@
-A pure Python library for driving HUB75 type RGB Matrix panels. The goal is to provide graphics functions that will run on CircuitPython or MicroPython for boards that don't have firmware support for RGB Matrix panels. As demonstrated in the provided examples this library works well with the [Adafruit_CircuitPython_GFX](https://github.com/adafruit/Adafruit_CircuitPython_GFX) libaray for both CircuitPython and MicroPython   
+A pure Python library for driving HUB75 type RGB Matrix panels. The goal is to provide graphics functions that will run on CircuitPython or MicroPython for boards that don't have firmware support for RGB Matrix panels, like the mimxrt10xx (teensy 4/4.1) or broadcom (RPi Zero 2w) boards. As demonstrated in the provided examples this library works well with the [Adafruit_CircuitPython_GFX](https://github.com/adafruit/Adafruit_CircuitPython_GFX) libaray for both CircuitPython and MicroPython   
 
 
 class **rgbmatrix_coopmt.RGBMatrix**(*, **rows**:*int*, **cols**:*int*, **brightness**:*float*, **addrPins**:*list[str]*, **rgbPins**:*list[str]*, **clockPin**:*str*, **latchPin**:*str*, **OEPin**:*str*, **unused_rgbPins**:*list[str]*=None)   
@@ -68,7 +68,7 @@ RGBMatrix.input() method which will refresh the display while waiting for user i
 
 .. py:method:: RGBMatrix.**refresh()**   
 
-    Refreshes the RGB matrix display. This function must be performed a frequently as possible.   
+    Refreshes the RGB matrix display. This function must be performed as frequently as possible.   
 
 .. py:method:: RGBMatrix.**sendrow(row)**   
 
@@ -85,14 +85,14 @@ RGBMatrix.input() method which will refresh the display while waiting for user i
 .. py:method:: RGBMatrix.**line(row0, col0, row1, col1, color=1)**   
 
     Draws a straight line of color (0-7) between points (row0,col0) and (row1,col1). There is likely no 
-    performance advanage of using this method over the adafruit_gfx.gfx line method. To use the
+    performance advanage to using this method over the adafruit_gfx.gfx line method. To use the
     adafruit_gfx library with Micropython the Python source version should be downloaded from 
     github (https://github.com/adafruit/Adafruit_CircuitPython_GFX)   
 
 .. py:method:: RGBMatrix.**circle(centrow,centcol,radius,color=1)**   
 
     Draws a circle of radius and color (0-7) centered at points (centrow,centcol). There is likely no 
-    performance advanage of using this method over the adafruit_gfx.gfx circle method. To use the
+    performance advanage to using this method over the adafruit_gfx.gfx circle method. To use the
     adafruit_gfx library with Micropython the Python source version should be downloaded from 
     github (https://github.com/adafruit/Adafruit_CircuitPython_GFX)   
 
