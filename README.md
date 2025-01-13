@@ -1,5 +1,8 @@
 A pure Python library for driving HUB75 type RGB Matrix panels. The goal is to provide graphics functions that will run on CircuitPython or MicroPython for boards that don't have firmware support for RGB Matrix panels. As demonstrated in the provided examples this library works well with the [Adafruit_CircuitPython_GFX](https://github.com/adafruit/Adafruit_CircuitPython_GFX) libaray for both CircuitPython and MicroPython   
 
+
+    class gbmatrix_coopmt.RGBMatrix(*,rows:int,cols:int,brightness:float,addrPins:list[str],rgbPins:list[str],clockPin:str,latchPin:str,OEPin:str,unused_rgbPins:list[str]=None)
+
     A driver for HUB75 RGB matrix display panels.
 
     The RGBMatrix.refresh() method must be called as frequently as possible to maintain the
