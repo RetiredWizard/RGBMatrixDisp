@@ -1,6 +1,11 @@
-from sys import stdin
-from supervisor import runtime
-import digitalio
+from sys import stdin,implementation
+import select
+try:
+    import digitalio
+    import board
+except:
+    from machine import Pin
+    
 import math
 try:
     import adafruit_ticks
@@ -20,32 +25,50 @@ class RGBMatrix:
         self._prevShiftReg1 = bytearray(self.cols)
         self._prevShiftReg2 = bytearray(self.cols)
 
-        self._clockIO = digitalio.DigitalInOut(clockPin)
-        self._clockIO.direction = digitalio.Direction.OUTPUT
-        self._latchIO = digitalio.DigitalInOut(latchPin)
-        self._latchIO.direction = digitalio.Direction.OUTPUT
-        self._OEIO = digitalio.DigitalInOut(OEPin)
-        self._OEIO.direction = digitalio.Direction.OUTPUT
-
         self._addrIO = []
         self._rgbIO = []
         self._unused_rgbIO = []
 
-        for pin in addrPins:
-            self._addrIO.append(digitalio.DigitalInOut(pin))
-            self._addrIO[-1].direction = digitalio.Direction.OUTPUT
-            self._addrIO[-1].value = False
+        if implementation.name.upper() == "MICROPYTHON":
+            self._clockIO = Pin(clockPin,Pin.OUT)
+            self._latchIO = Pin(latchPin,Pin.OUT)
+            self._OEIO = Pin(OEPin,Pin.OUT)
 
-        for pin in rgbPins:
-            self._rgbIO.append(digitalio.DigitalInOut(pin))
-            self._rgbIO[-1].direction = digitalio.Direction.OUTPUT
-            self._rgbIO[-1].value = False
+            for pin in addrPins:
+                self._addrIO.append(Pin(pin,Pin.OUT))
+                self._addrIO[-1].value(False)
 
-        if unused_rgbPins != None:
-            for pin in unused_rgbPins:
-                self._unused_rgbIO.append(digitalio.DigitalInOut(pin))
-                self._unused_rgbIO[-1].direction = digitalio.Direction.OUTPUT
-                self._unused_rgbIO[-1].value = False
+            for pin in rgbPins:
+                self._rgbIO.append(Pin(pin,Pin.OUT))
+                self._rgbIO[-1].value(False)
+
+            if unused_rgbPins != None:
+                for pin in unused_rgbPins:
+                    self._unused_rgbIO.append(Pin(pin,Pin.OUT))
+                    self._unused_rgbIO[-1].value(False)
+        else:
+            self._clockIO = digitalio.DigitalInOut(getattr(board,clockPin))
+            self._clockIO.direction = digitalio.Direction.OUTPUT
+            self._latchIO = digitalio.DigitalInOut(getattr(board,latchPin))
+            self._latchIO.direction = digitalio.Direction.OUTPUT
+            self._OEIO = digitalio.DigitalInOut(getattr(board,OEPin))
+            self._OEIO.direction = digitalio.Direction.OUTPUT
+
+            for pin in addrPins:
+                self._addrIO.append(digitalio.DigitalInOut(getattr(board,pin)))
+                self._addrIO[-1].direction = digitalio.Direction.OUTPUT
+                self._addrIO[-1].value = False
+
+            for pin in rgbPins:
+                self._rgbIO.append(digitalio.DigitalInOut(getattr(board,pin)))
+                self._rgbIO[-1].direction = digitalio.Direction.OUTPUT
+                self._rgbIO[-1].value = False
+
+            if unused_rgbPins != None:
+                for pin in unused_rgbPins:
+                    self._unused_rgbIO.append(digitalio.DigitalInOut(getattr(board,pin)))
+                    self._unused_rgbIO[-1].direction = digitalio.Direction.OUTPUT
+                    self._unused_rgbIO[-1].value = False
 
         self._numAddrPins = len(self._addrIO)
         self._numRGB = len(self._rgbIO) // 2
@@ -67,16 +90,33 @@ class RGBMatrix:
         del self._prevShiftReg1
         del self._prevShiftReg2
 
-        self._clockIO.deinit()
-        self._latchIO.deinit()
-        self._OEIO.deinit()
+        if implementation.name.upper() == "CIRCUITPYTHON":
+            self._clockIO.deinit()
+            self._latchIO.deinit()
+            self._OEIO.deinit()
 
-        for pin in self._addrIO:
-            pin.deinit()
-        for pin in self._rgbIO:
-            pin.deinit()
-        for pin in self._unused_rgbIO:
-            pin.deinit()
+            for pin in self._addrIO:
+                pin.deinit()
+            for pin in self._rgbIO:
+                pin.deinit()
+            for pin in self._unused_rgbIO:
+                pin.deinit()
+            
+    def serial_bytes_available(self,timeout=1):
+        # Does the same function as supervisor.runtime.serial_bytes_available
+        spoll = select.poll()
+        spoll.register(stdin,select.POLLIN)
+
+        retval = spoll.poll(timeout)
+        spoll.unregister(stdin)
+
+        if not retval:
+            retval = 0
+        else:
+            retval = 1
+
+        return retval
+
 
     def fill(self,color):
         for i in range(self.rows):
@@ -87,7 +127,7 @@ class RGBMatrix:
 
     def input(self,prompt=None,silent=False):
 
-        while runtime.serial_bytes_available:
+        while self.serial_bytes_available():
             stdin.read(1)
 
         if prompt != None:
@@ -98,7 +138,7 @@ class RGBMatrix:
         while keys[-1:] != '\n':
             self.refresh()
         
-            if runtime.serial_bytes_available:
+            if self.serial_bytes_available():
                 try:
                     keys += stdin.read(1)
                     if keys[-1] in ['\x7f','\x08']:
@@ -124,7 +164,10 @@ class RGBMatrix:
                     self.sendrow(row)
 
     def off(self):
-        self._OEIO.value = True     # display off
+        if implementation.name.upper() == "CIRCUITPYTHON":
+            self._OEIO.value = True     # display off
+        else:
+            self._OEIO.value(True)
 
     def refresh(self):
         adrline = []
@@ -132,80 +175,156 @@ class RGBMatrix:
         for i in range(self._numAddrPins):   # set row to zero
             adrline.append(0)
 
-        rowrange = 1 << self._numAddrPins
-        for row in range(rowrange):
-            row2 = row + rowrange
+        if implementation.name.upper() == "CIRCUITPYTHON":
+            rowrange = 1 << self._numAddrPins
+            for row in range(rowrange):
+                row2 = row + rowrange
 
-            # If row is different than previous
-            if self._framebuffer[row] != self._prevShiftReg1 or \
-                self._framebuffer[row2] != self._prevShiftReg2:
+                # If row is different than previous
+                if self._framebuffer[row] != self._prevShiftReg1 or \
+                    self._framebuffer[row2] != self._prevShiftReg2:
 
-                self._prevShiftReg1 = self._framebuffer[row]   # save latched row
-                self._prevShiftReg2 = self._framebuffer[row2]
+                    self._prevShiftReg1 = self._framebuffer[row]   # save latched row
+                    self._prevShiftReg2 = self._framebuffer[row2]
 
-                for col in range(self.cols):         # shift in row bits
-                    for i in range(self._numRGB):
-                        shft = 1 << ((self._numRGB-1) - i)
-                        self._rgbIO[i].value = self._prevShiftReg1[col] & shft
-                        self._rgbIO[i+self._numRGB].value = self._prevShiftReg2[col] & shft
-#                        self._rgbIO[i].value = self._framebuffer[row][col] & shft
-#                        self._rgbIO[i+self._numRGB].value = self._framebuffer[row2][col] & shft
-                    self._clockIO.value = True
-                    self._clockIO.value = False
+                    for col in range(self.cols):         # shift in row bits
+                        for i in range(self._numRGB):
+                            shft = 1 << ((self._numRGB-1) - i)
+                            self._rgbIO[i].value = self._prevShiftReg1[col] & shft
+                            self._rgbIO[i+self._numRGB].value = self._prevShiftReg2[col] & shft
+    #                        self._rgbIO[i].value = self._framebuffer[row][col] & shft
+    #                        self._rgbIO[i+self._numRGB].value = self._framebuffer[row2][col] & shft
+                        self._clockIO.value = True
+                        self._clockIO.value = False
 
-                self._OEIO.value = True                 # display off
+                    self._OEIO.value = True                 # display off
 
-                self._latchIO.value = True       # latch new row
-                self._latchIO.value = False
-            else:
-                if self.brightness > 0:              # brightness delay (hack)
-                    timerEnd = self._seconds() + (self.brightness / 1000)
-                    while self._seconds() < timerEnd:
-                        pass
-
-            for i in range(self._numAddrPins):      # move to new row
-                self._addrIO[i].value = adrline[i]
-
-            self._OEIO.value = False             # display on
-
-            # Binary increment of address lines
-            adrline[0] = not adrline[0]
-            for i in range(1,self._numAddrPins):
-                if not adrline[i-1]:
-                    adrline[i] = not adrline[i]
+                    self._latchIO.value = True       # latch new row
+                    self._latchIO.value = False
                 else:
-                    break
+                    if self.brightness > 0:              # brightness delay (hack)
+                        timerEnd = self._seconds() + (self.brightness / 1000)
+                        while self._seconds() < timerEnd:
+                            pass
+
+                for i in range(self._numAddrPins):      # move to new row
+                    self._addrIO[i].value = adrline[i]
+
+                self._OEIO.value = False             # display on
+
+                # Binary increment of address lines
+                adrline[0] = not adrline[0]
+                for i in range(1,self._numAddrPins):
+                    if not adrline[i-1]:
+                        adrline[i] = not adrline[i]
+                    else:
+                        break
+
+        else: # Micropython
+            
+            rowrange = 1 << self._numAddrPins
+            for row in range(rowrange):
+                row2 = row + rowrange
+
+                # If row is different than previous
+                if self._framebuffer[row] != self._prevShiftReg1 or \
+                    self._framebuffer[row2] != self._prevShiftReg2:
+
+                    self._prevShiftReg1 = self._framebuffer[row]   # save latched row
+                    self._prevShiftReg2 = self._framebuffer[row2]
+
+                    for col in range(self.cols):         # shift in row bits
+                        for i in range(self._numRGB):
+                            shft = 1 << ((self._numRGB-1) - i)
+                            self._rgbIO[i].value(self._prevShiftReg1[col] & shft)
+                            self._rgbIO[i+self._numRGB].value(self._prevShiftReg2[col] & shft)
+                        self._clockIO.value(True)
+                        self._clockIO.value(False)
+
+                    self._OEIO.value(True)                 # display off
+
+                    self._latchIO.value(True)       # latch new row
+                    self._latchIO.value(False)
+                else:
+                    if self.brightness > 0:              # brightness delay (hack)
+                        timerEnd = self._seconds() + (self.brightness / 1000)
+                        while self._seconds() < timerEnd:
+                            pass
+
+                for i in range(self._numAddrPins):      # move to new row
+                    self._addrIO[i].value(adrline[i])
+
+                self._OEIO.value(False)             # display on
+
+                # Binary increment of address lines
+                adrline[0] = not adrline[0]
+                for i in range(1,self._numAddrPins):
+                    if not adrline[i-1]:
+                        adrline[i] = not adrline[i]
+                    else:
+                        break
+            
 
     def sendrow(self,row):
 
-        self._OEIO.value = False
+        if implementation.name.upper() == "CIRCUITPYTHON":
+            self._OEIO.value = False
 
-        if row < self._updaterows:
-            row1 = row
-            row2 = row + (self._updaterows)
-        else:
-            row1 = row - (self._updaterows)
-            row2 = row
+            if row < self._updaterows:
+                row1 = row
+                row2 = row + (self._updaterows)
+            else:
+                row1 = row - (self._updaterows)
+                row2 = row
 
-        self._prevShiftReg1 = self._framebuffer[row1]
-        self._prevShiftReg2 = self._framebuffer[row2]
-        for j in range(self.cols):
-            for i in range(self._numRGB):
-                shft = 1 << ((self._numRGB-1) - i)
-                self._rgbIO[i].value = self._prevShiftReg1[j] & shft
-                self._rgbIO[i+self._numRGB].value = self._prevShiftReg2[j] & shft
-            self._clockIO.value = True
-            self._clockIO.value = False
+            self._prevShiftReg1 = self._framebuffer[row1]
+            self._prevShiftReg2 = self._framebuffer[row2]
+            for j in range(self.cols):
+                for i in range(self._numRGB):
+                    shft = 1 << ((self._numRGB-1) - i)
+                    self._rgbIO[i].value = self._prevShiftReg1[j] & shft
+                    self._rgbIO[i+self._numRGB].value = self._prevShiftReg2[j] & shft
+                self._clockIO.value = True
+                self._clockIO.value = False
 
-        self._OEIO.value = True
+            self._OEIO.value = True
 
-        for i in range(self._numAddrPins):
-            self._addrIO[i].value = (row) & (1<<i)
+            for i in range(self._numAddrPins):
+                self._addrIO[i].value = (row) & (1<<i)
 
-        self._latchIO.value = True
-        self._latchIO.value = False
+            self._latchIO.value = True
+            self._latchIO.value = False
 
-        self._OEIO.value = False
+            self._OEIO.value = False
+        else:     # Micropython
+            self._OEIO.value(False)
+
+            if row < self._updaterows:
+                row1 = row
+                row2 = row + (self._updaterows)
+            else:
+                row1 = row - (self._updaterows)
+                row2 = row
+
+            self._prevShiftReg1 = self._framebuffer[row1]
+            self._prevShiftReg2 = self._framebuffer[row2]
+            for j in range(self.cols):
+                for i in range(self._numRGB):
+                    shft = 1 << ((self._numRGB-1) - i)
+                    self._rgbIO[i].value(self._prevShiftReg1[j] & shft)
+                    self._rgbIO[i+self._numRGB].value(self._prevShiftReg2[j] & shft)
+                self._clockIO.value(True)
+                self._clockIO.value(False)
+
+            self._OEIO.value(True)
+
+            for i in range(self._numAddrPins):
+                self._addrIO[i].value((row) & (1<<i))
+
+            self._latchIO.value(True)
+            self._latchIO.value(False)
+
+            self._OEIO.value(False)
 
     def value(self,row,col):
         return self._framebuffer[row][col]
