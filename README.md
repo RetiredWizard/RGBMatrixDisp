@@ -50,12 +50,14 @@ RGBMatrix.input() method which will refresh the display while waiting for user i
 
 .. py:method:: RGBMatrix.**input(prompt=None,optimize=True,silent=False)**   
 
-    Displays a prompt if provided and waits for user input. While waiting the RGB matrix display is
-    refreshed using the specified optimize value (see RGBMatrix.**refresh**). If the slient parameter is set to True, the users input is not echoed/displayed.   
+    Displays a prompt if provided and waits for user input. While waiting the RGB matrix display 
+    is refreshed using the specified optimize value (see RGBMatrix.**refresh**). 
+    If the slient parameter is set to True, the users input is not echoed/displayed.   
 
 .. py:method:: RGBMatrix.**sleep(seconds,optimize=True)**   
 
-    sleeps for a given number of seconds. While sleeping the RGB matrix display is refreshed using the specified optimize value (see RGBMatrix.**refresh**).   
+    sleeps for a given number of seconds. While sleeping the RGB matrix display is refreshed using 
+    the specified optimize value (see RGBMatrix.**refresh**).   
 
 .. py:method:: RGBMatrix.**off()**   
 
@@ -63,7 +65,13 @@ RGBMatrix.input() method which will refresh the display while waiting for user i
 
 .. py:method:: RGBMatrix.**refresh(optimize=True)**   
 
-    Refreshes the RGB matrix display. This function must be performed as frequently as possible. If the optimize parameter is left as True, any row that has the same framebuffer values as the previously displayed row will be be displayed without shifting the color values from the framebuffer. With some display patterns this can signficantly increase the refresh speed, however it can also result in an uneven brightness of rows since some rows spend more time being displayed while the shift registers are being filled. Setting optimize to False disables this optimization.
+    Refreshes the RGB matrix display. This function must be performed as frequently as possible. If 
+    the optimize parameter is left as True, any row that has the same framebuffer values as the 
+    previously displayed row will be be displayed without shifting the color values from the 
+    framebuffer. With some display patterns this can signficantly increase the refresh speed, 
+    however it can also result in an uneven brightness of rows since some rows spend more time 
+    being displayed while the shift registers are being filled. Setting optimize to False 
+    disables this optimization.
 
 .. py:method:: RGBMatrix.**sendrow(row)**   
 
@@ -79,16 +87,16 @@ RGBMatrix.input() method which will refresh the display while waiting for user i
 
 .. py:method:: RGBMatrix.**line(row0, col0, row1, col1, color=1)**   
 
-    Draws a straight line of color (0-7) between points (row0,col0) and (row1,col1). There is likely no 
-    performance advanage to using this method over the adafruit_gfx.gfx line method. To use the
-    adafruit_gfx library with Micropython the Python source version should be downloaded from 
+    Draws a straight line of color (0-7) between points (row0,col0) and (row1,col1). There is likely 
+    no performance advanage to using this method over the adafruit_gfx.gfx line method. To use 
+    the adafruit_gfx library with Micropython the Python source version should be downloaded from 
     github (https://github.com/adafruit/Adafruit_CircuitPython_GFX)   
 
 .. py:method:: RGBMatrix.**circle(centrow,centcol,radius,color=1)**   
 
-    Draws a circle of radius and color (0-7) centered at points (centrow,centcol). There is likely no 
-    performance advanage to using this method over the adafruit_gfx.gfx circle method. To use the
-    adafruit_gfx library with Micropython the Python source version should be downloaded from 
+    Draws a circle of radius and color (0-7) centered at points (centrow,centcol). There is likely 
+    no performance advanage to using this method over the adafruit_gfx.gfx circle method. To use 
+    the adafruit_gfx library with Micropython the Python source version should be downloaded from 
     github (https://github.com/adafruit/Adafruit_CircuitPython_GFX)   
 
 .. py:method:: RGBMatrix.**dump()**   

@@ -70,13 +70,13 @@ class RGBMatrix:
 
     .. py:method:: RGBMatrix.input(prompt=None,optimize=True,silent=False)
 
-        Displays a prompt if provided and waits for user input. While waiting the RGB matrix display is
-        refreshed using the specified optimize value (see RGBMatrix.refresh). If the slient parameter
-        is set to True, the users input is not echoed/displayed.   
+        Displays a prompt if provided and waits for user input. While waiting the RGB matrix display is   
+        refreshed using the specified optimize value (see RGBMatrix.refresh). If the slient parameter   
+        is set to True, the user's input is not echoed/displayed.   
 
     .. py:method:: RGBMatrix.sleep(seconds,optimize=True)
 
-        sleeps for a given number of seconds. While sleeping the RGB matrix display is refreshed using
+        sleeps for a given number of seconds. While sleeping the RGB matrix display is refreshed using   
         the specified optimize value (see RGBMatrix.refresh).   
 
     .. py:method:: RGBMatrix.off()
