@@ -298,24 +298,30 @@ class RGBMatrix:
                     self._prevShiftReg2 = self._framebuffer[row2]
 
                     for col in range(self.cols):         # shift in row bits
-                        for i in range(self._numRGB):
-                            shft = 1 << ((self._numRGB-1) - i)
-                            self._rgbIO[i].value = self._prevShiftReg1[col] & shft
-                            self._rgbIO[i+self._numRGB].value = self._prevShiftReg2[col] & shft
-    #                        self._rgbIO[i].value = self._framebuffer[row][col] & shft
-    #                        self._rgbIO[i+self._numRGB].value = self._framebuffer[row2][col] & shft
+                        shft = 1 << (self._numRGB-1)
+                        self._rgbIO[0].value = self._prevShiftReg1[col] & shft
+                        self._rgbIO[self._numRGB].value = self._prevShiftReg2[col] & shft
+                        if shft > 1:
+                            shft >>= 1
+                            self._rgbIO[1].value = self._prevShiftReg1[col] & shft
+                            self._rgbIO[1+self._numRGB].value = self._prevShiftReg2[col] & shft
+                            if shft > 1:
+                                shft = 1
+                                self._rgbIO[2].value = self._prevShiftReg1[col] & shft
+                                self._rgbIO[2+self._numRGB].value = self._prevShiftReg2[col] & shft
                         self._clockIO.value = True
                         self._clockIO.value = False
 
-                    self._OEIO.value = True                 # display off
-
-                    self._latchIO.value = True       # latch new row
-                    self._latchIO.value = False
                 else:
                     if self.brightness > 0:              # brightness delay (hack)
                         timerEnd = self._seconds() + (self.brightness / 1000)
                         while self._seconds() < timerEnd:
                             pass
+                        
+                self._OEIO.value = True                 # display off
+
+                self._latchIO.value = True       # latch new row
+                self._latchIO.value = False
 
                 for i in range(self._numAddrPins):      # move to new row
                     self._addrIO[i].value = adrline[i]
@@ -344,22 +350,30 @@ class RGBMatrix:
                     self._prevShiftReg2 = self._framebuffer[row2]
 
                     for col in range(self.cols):         # shift in row bits
-                        for i in range(self._numRGB):
-                            shft = 1 << ((self._numRGB-1) - i)
-                            self._rgbIO[i].value(self._prevShiftReg1[col] & shft)
-                            self._rgbIO[i+self._numRGB].value(self._prevShiftReg2[col] & shft)
+                        shft = 1 << (self._numRGB-1)
+                        self._rgbIO[0].value(self._prevShiftReg1[col] & shft)
+                        self._rgbIO[self._numRGB].value(self._prevShiftReg2[col] & shft)
+                        if shft > 1:
+                            shft >>= 1
+                            self._rgbIO[1].value(self._prevShiftReg1[col] & shft)
+                            self._rgbIO[1+self._numRGB].value(self._prevShiftReg2[col] & shft)
+                            if shft > 1:
+                                shft = 1
+                                self._rgbIO[2].value(self._prevShiftReg1[col] & shft)
+                                self._rgbIO[2+self._numRGB].value(self._prevShiftReg2[col] & shft)
                         self._clockIO.value(True)
                         self._clockIO.value(False)
 
-                    self._OEIO.value(True)                 # display off
-
-                    self._latchIO.value(True)       # latch new row
-                    self._latchIO.value(False)
                 else:
                     if self.brightness > 0:              # brightness delay (hack)
                         timerEnd = self._seconds() + (self.brightness / 1000)
                         while self._seconds() < timerEnd:
                             pass
+
+                self._OEIO.value(True)                 # display off
+
+                self._latchIO.value(True)       # latch new row
+                self._latchIO.value(False)
 
                 for i in range(self._numAddrPins):      # move to new row
                     self._addrIO[i].value(adrline[i])
@@ -390,10 +404,17 @@ class RGBMatrix:
             self._prevShiftReg1 = self._framebuffer[row1]
             self._prevShiftReg2 = self._framebuffer[row2]
             for j in range(self.cols):
-                for i in range(self._numRGB):
-                    shft = 1 << ((self._numRGB-1) - i)
-                    self._rgbIO[i].value = self._prevShiftReg1[j] & shft
-                    self._rgbIO[i+self._numRGB].value = self._prevShiftReg2[j] & shft
+                shft = 1 << (self._numRGB-1)
+                self._rgbIO[0].value = self._prevShiftReg1[j] & shft
+                self._rgbIO[self._numRGB].value = self._prevShiftReg2[j] & shft
+                if shft > 1:
+                    shft >>= 1
+                    self._rgbIO[1].value = self._prevShiftReg1[j] & shft
+                    self._rgbIO[1+self._numRGB].value = self._prevShiftReg2[j] & shft
+                    if shft > 1:
+                        shft = 1
+                        self._rgbIO[2].value = self._prevShiftReg1[j] & shft
+                        self._rgbIO[2+self._numRGB].value = self._prevShiftReg2[j] & shft
                 self._clockIO.value = True
                 self._clockIO.value = False
 
@@ -419,10 +440,17 @@ class RGBMatrix:
             self._prevShiftReg1 = self._framebuffer[row1]
             self._prevShiftReg2 = self._framebuffer[row2]
             for j in range(self.cols):
-                for i in range(self._numRGB):
-                    shft = 1 << ((self._numRGB-1) - i)
-                    self._rgbIO[i].value(self._prevShiftReg1[j] & shft)
-                    self._rgbIO[i+self._numRGB].value(self._prevShiftReg2[j] & shft)
+                shft = 1 << (self._numRGB-1)
+                self._rgbIO[0].value(self._prevShiftReg1[j] & shft)
+                self._rgbIO[self._numRGB].value(self._prevShiftReg2[j] & shft)
+                if shft > 1:
+                    shft >>= 1
+                    self._rgbIO[1].value(self._prevShiftReg1[j] & shft)
+                    self._rgbIO[1+self._numRGB].value(self._prevShiftReg2[j] & shft)
+                    if shft > 1:
+                        shft = 1
+                        self._rgbIO[2].value(self._prevShiftReg1[j] & shft)
+                        self._rgbIO[2+self._numRGB].value(self._prevShiftReg2[j] & shft)
                 self._clockIO.value(True)
                 self._clockIO.value(False)
 
