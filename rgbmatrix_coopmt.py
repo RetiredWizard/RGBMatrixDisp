@@ -20,7 +20,7 @@ try:
 except:
     import time as adafruit_ticks
 
-__version__ = "0.0.0+auto.0"
+__version__ = "0.1.0+auto.0"
 __repo__ = "https://github.com/retiredwizard/RGBMatrixDisp.git"
 
 class RGBMatrix:
@@ -34,8 +34,6 @@ class RGBMatrix:
 
     :param int rows: The number of rows in the RGB matrix.
     :param int cols: The number of columns in the RGB matrix.
-    :param float brightness: A brightness modification for tweaking the uneven brightness resulting
-        from differing row timings due to speed optimizations. (a value of 0 disables the feature)
     :param list[str] addrPins: String representations of the matrix's address pins in the order
         (A, B, C, D, ...). For CircuitPython the strings should be BOARD attributes and for 
         MicroPython the strings should be valid machine.Pin parameters.
@@ -70,24 +68,30 @@ class RGBMatrix:
 
         Colors all pixels the given color. The color value can be 0-7.   
 
-    .. py:method:: RGBMatrix.input(prompt=None,silent=False)
+    .. py:method:: RGBMatrix.input(prompt=None,optimize=True,silent=False)
 
         Displays a prompt if provided and waits for user input. While waiting the RGB matrix display is
-        refreshed. If the slient parameter is set to True, the users input is not echoed/displayed.
+        refreshed using the specified optimize value (see RGBMatrix.refresh). If the slient parameter
+        is set to True, the users input is not echoed/displayed.   
 
-    .. py:method:: RGBMatrix.sleep(seconds,slow=False)
+    .. py:method:: RGBMatrix.sleep(seconds,optimize=True)
 
-        sleeps for a given number of seconds. While sleeping the RGB matrix display is refreshed.
-        If the slow parameter is set to True, display speed optimizations will be turned off resulting
-        in more flicker but a more uniform display brigtness across rows.
+        sleeps for a given number of seconds. While sleeping the RGB matrix display is refreshed using
+        the specified optimize value (see RGBMatrix.refresh).   
 
     .. py:method:: RGBMatrix.off()
 
         Turns the display off.
 
-    .. py:method:: RGBMatrix.refresh()
+    .. py:method:: RGBMatrix.refresh(optimize=True)
 
         Refreshes the RGB matrix display. This function must be performed as frequently as possible.
+        If the optimize parameter is left as True, any row that has the same framebuffer values as the
+        previously displayed row will be be displayed without shifting the color values from the
+        framebuffer. With some display patterns this can signficantly increase the refresh speed,
+        however it can also result in an uneven brightness of rows since some rows spend more time
+        being displayed while the shift registers are being filled. Setting optimize to False disables
+        this optimization.
 
     .. py:method:: RGBMatrix.sendrow(row)
 
@@ -121,19 +125,18 @@ class RGBMatrix:
 
     """
 
-    def __init__(self,rows,cols,brightness,addrPins,rgbPins,clockPin,latchPin,OEPin,unused_rgbPins=None):
+    def __init__(self,rows,cols,addrPins,rgbPins,clockPin,latchPin,OEPin,unused_rgbPins=None):
 
         if rows != 2 ** (len(addrPins)+1):
             raise ValueError(f'A matrix with {rows} rows requires {len(bin(rows))-4} Address Pins')
 
         self.rows = rows
         self.cols = cols
-        self.brightness = brightness
         self._framebuffer = []
         for i in range(self.rows):
             self._framebuffer.append(bytearray(self.cols))
-        self._prevShiftReg1 = bytearray(self.cols)
-        self._prevShiftReg2 = bytearray(self.cols)
+        self._prevShiftReg1 = None
+        self._prevShiftReg2 = None
 
         self._addrIO = []
         self._rgbIO = []
@@ -181,6 +184,7 @@ class RGBMatrix:
                     self._unused_rgbIO[-1].value = False
 
         self._numAddrPins = len(self._addrIO)
+        self._adrline = [0] * self._numAddrPins
         self._numRGB = len(self._rgbIO) // 2
         self._updaterows = self.rows // 2
 
@@ -235,7 +239,7 @@ class RGBMatrix:
             if color == 0:
                 self.sendrow(i)
 
-    def input(self,prompt=None,silent=False):
+    def input(self,prompt=None,optimize=True,silent=False):
 
         while self.serial_bytes_available():
             stdin.read(1)
@@ -246,7 +250,7 @@ class RGBMatrix:
         keys = ""
 
         while keys[-1:] != '\n':
-            self.refresh()
+            self.refresh(optimize)
         
             if self.serial_bytes_available():
                 try:
@@ -263,15 +267,10 @@ class RGBMatrix:
 
         return keys[:-1]
 
-    def sleep(self,seconds,slow=False):
+    def sleep(self,seconds,optimize=True):
         timerEnd = self._seconds() + seconds
-        if not slow:
-            while self._seconds() < timerEnd:
-                self.refresh()
-        else:
-            while self._seconds() < timerEnd:
-                for row in range(self.rows):
-                    self.sendrow(row)
+        while self._seconds() < timerEnd:
+            self.refresh(optimize)
 
     def off(self):
         if implementation.name.upper() == "CIRCUITPYTHON":
@@ -279,19 +278,14 @@ class RGBMatrix:
         else:
             self._OEIO.value(True)
 
-    def refresh(self):
-        adrline = []
-        self._prevShiftReg1 = None
-        for i in range(self._numAddrPins):   # set row to zero
-            adrline.append(0)
-
+    def refresh(self,optimize=True):
+        rowrange = 1 << self._numAddrPins
         if implementation.name.upper() == "CIRCUITPYTHON":
-            rowrange = 1 << self._numAddrPins
             for row in range(rowrange):
                 row2 = row + rowrange
 
                 # If row is different than previous
-                if self._framebuffer[row] != self._prevShiftReg1 or \
+                if not optimize or self._framebuffer[row] != self._prevShiftReg1 or \
                     self._framebuffer[row2] != self._prevShiftReg2:
 
                     self._prevShiftReg1 = self._framebuffer[row]   # save latched row
@@ -312,39 +306,32 @@ class RGBMatrix:
                         self._clockIO.value = True
                         self._clockIO.value = False
 
-                else:
-                    if self.brightness > 0:              # brightness delay (hack)
-                        timerEnd = self._seconds() + (self.brightness / 1000)
-                        while self._seconds() < timerEnd:
-                            pass
-                        
                 self._OEIO.value = True                 # display off
 
                 self._latchIO.value = True       # latch new row
                 self._latchIO.value = False
 
                 for i in range(self._numAddrPins):      # move to new row
-                    self._addrIO[i].value = adrline[i]
+                    self._addrIO[i].value = self._adrline[i]
 
                 self._OEIO.value = False             # display on
 
                 # Binary increment of address lines
-                adrline[0] = not adrline[0]
+                self._adrline[0] = not self._adrline[0]
                 for i in range(1,self._numAddrPins):
-                    if not adrline[i-1]:
-                        adrline[i] = not adrline[i]
+                    if not self._adrline[i-1]:
+                        self._adrline[i] = not self._adrline[i]
                     else:
                         break
 
         else: # Micropython
             
-            rowrange = 1 << self._numAddrPins
             for row in range(rowrange):
                 row2 = row + rowrange
 
                 # If row is different than previous
-                if self._framebuffer[row] != self._prevShiftReg1 or \
-                    self._framebuffer[row2] != self._prevShiftReg2:
+                if optimize and (self._framebuffer[row] != self._prevShiftReg1 or \
+                    self._framebuffer[row2] != self._prevShiftReg2):
 
                     self._prevShiftReg1 = self._framebuffer[row]   # save latched row
                     self._prevShiftReg2 = self._framebuffer[row2]
@@ -363,12 +350,6 @@ class RGBMatrix:
                                 self._rgbIO[2+self._numRGB].value(self._prevShiftReg2[col] & shft)
                         self._clockIO.value(True)
                         self._clockIO.value(False)
-
-                else:
-                    if self.brightness > 0:              # brightness delay (hack)
-                        timerEnd = self._seconds() + (self.brightness / 1000)
-                        while self._seconds() < timerEnd:
-                            pass
 
                 self._OEIO.value(True)                 # display off
 

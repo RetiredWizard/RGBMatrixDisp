@@ -1,7 +1,7 @@
 A pure Python library for driving HUB75 type RGB Matrix panels. The goal is to provide graphics functions that will run on CircuitPython or MicroPython for boards that don't have firmware support for RGB Matrix panels, like the mimxrt10xx (teensy 4/4.1) or broadcom (RPi Zero 2w) boards. As demonstrated in the provided examples this library works well with the [Adafruit_CircuitPython_GFX](https://github.com/adafruit/Adafruit_CircuitPython_GFX) libaray for both CircuitPython and MicroPython   
 
 
-class **rgbmatrix_coopmt.RGBMatrix**(*, **rows**:*int*, **cols**:*int*, **brightness**:*float*, **addrPins**:*list[str]*, **rgbPins**:*list[str]*, **clockPin**:*str*, **latchPin**:*str*, **OEPin**:*str*, **unused_rgbPins**:*list[str]*=None)   
+class **rgbmatrix_coopmt.RGBMatrix**(*, **rows**:*int*, **cols**:*int*, **addrPins**:*list[str]*, **rgbPins**:*list[str]*, **clockPin**:*str*, **latchPin**:*str*, **OEPin**:*str*, **unused_rgbPins**:*list[str]*=None)   
 
 A driver for HUB75 RGB matrix display panels.   
 
@@ -13,9 +13,6 @@ RGBMatrix.input() method which will refresh the display while waiting for user i
 .. param *int* **rows**: The number of rows in the RGB matrix.   
 
 .. param *int* **cols**: The number of columns in the RGB matrix.   
-
-.. param *float* **brightness**: A brightness modification for tweaking the uneven brightness resulting
-    from differing row timings due to speed optimizations. (a value of 0 disables the feature)   
 
 .. param *list[str]* **addrPins**: String representations of the matrix's address pins in the order
     (A, B, C, D, ...). For CircuitPython the strings should be BOARD attributes and for 
@@ -51,24 +48,22 @@ RGBMatrix.input() method which will refresh the display while waiting for user i
 
     Colors all pixels the given color. The color value can be 0-7.   
 
-.. py:method:: RGBMatrix.**input(prompt=None,silent=False)**   
+.. py:method:: RGBMatrix.**input(prompt=None,optimize=True,silent=False)**   
 
     Displays a prompt if provided and waits for user input. While waiting the RGB matrix display is
-    refreshed. If the slient parameter is set to True, the users input is not echoed/displayed.   
+    refreshed using the specified optimize value (see RGBMatrix.**refresh**). If the slient parameter is set to True, the users input is not echoed/displayed.   
 
-.. py:method:: RGBMatrix.**sleep(seconds,slow=False)**   
+.. py:method:: RGBMatrix.**sleep(seconds,optimize=True)**   
 
-    sleeps for a given number of seconds. While sleeping the RGB matrix display is refreshed.
-    If the slow parameter is set to True, display speed optimizations will be turned off resulting
-    in more flicker but a more uniform display brigtness across rows.   
+    sleeps for a given number of seconds. While sleeping the RGB matrix display is refreshed using the specified optimize value (see RGBMatrix.**refresh**).   
 
 .. py:method:: RGBMatrix.**off()**   
 
     Turns the display off.   
 
-.. py:method:: RGBMatrix.**refresh()**   
+.. py:method:: RGBMatrix.**refresh(optimize=True)**   
 
-    Refreshes the RGB matrix display. This function must be performed as frequently as possible.   
+    Refreshes the RGB matrix display. This function must be performed as frequently as possible. If the optimize parameter is left as True, any row that has the same framebuffer values as the previously displayed row will be be displayed without shifting the color values from the framebuffer. With some display patterns this can signficantly increase the refresh speed, however it can also result in an uneven brightness of rows since some rows spend more time being displayed while the shift registers are being filled. Setting optimize to False disables this optimization.
 
 .. py:method:: RGBMatrix.**sendrow(row)**   
 

@@ -35,7 +35,7 @@ if rgbPins == []:
 #    unused_rgbPins = None
 
 rows = 2 ** (len(addrPins)+1)
-matrix = rgbmatrix_coopmt.RGBMatrix(rows,64,0,addrPins,rgbPins,clockPin,latchPin,OEPin,unused_rgbPins)
+matrix = rgbmatrix_coopmt.RGBMatrix(rows,64,addrPins,rgbPins,clockPin,latchPin,OEPin,unused_rgbPins)
 
 or1 = 0
 oc1 = 0

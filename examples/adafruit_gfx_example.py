@@ -43,14 +43,14 @@ if rgbPins == []:
 #    unused_rgbPins = None
 
 rows = 2 ** (len(addrPins)+1)
-display = rgbmatrix_coopmt.RGBMatrix(rows,64,0,addrPins,rgbPins,clockPin,latchPin,OEPin,unused_rgbPins)
+display = rgbmatrix_coopmt.RGBMatrix(rows,64,addrPins,rgbPins,clockPin,latchPin,OEPin,unused_rgbPins)
 
 # Initialize the GFX library, giving it the display pixel function as its pixel
 # drawing primitive command.
 graphics = adafruit_gfx.gfx.GFX(display.rows,display.cols,display.point)
 
-# Set to False to reduce flicker esp on slower driver boards
-refreshslow = True
+# Set to True to reduce flicker especially on slower driver boards
+optimize = False
 # Now loop forever drawing different primitives.
 
 if len(rgbPins) == 6:
@@ -68,34 +68,34 @@ while True:
     # Clear screen and draw a red line.
     display.fill(0)
     graphics.line(0, 0, display.rows-1, display.cols-1, red)
-    display.sleep(2,refreshslow)
+    display.sleep(2,optimize)
     # Clear screen and draw a green rectangle.
     display.fill(0)
     graphics.rect(0, 0, display.rows//2, display.cols//2, green)
-    display.sleep(2,refreshslow)
+    display.sleep(2,optimize)
     # Clear screen and draw a filled green rectangle.
     display.fill(0)
     graphics.fill_rect(0, 0, display.rows//2, display.cols//2, green)
-    display.sleep(2,refreshslow)
+    display.sleep(2,optimize)
     # Clear screen and draw a blue circle.
     display.fill(0)
     graphics.circle(display.rows//2, display.cols//2,
         min(display.rows,display.cols)//4, blue)
-    display.sleep(2,refreshslow)
+    display.sleep(2,optimize)
     # Clear screen and draw a filled blue circle.
     display.fill(0)
     graphics.fill_circle(display.rows//2, display.cols//2, 
         min(display.rows,display.cols)//4, blue)
-    display.sleep(2,refreshslow)
+    display.sleep(2,optimize)
     # Clear screen and draw a pink triangle.
     display.fill(0)
     graphics.triangle(display.rows//2, display.cols//3, 
         round(display.rows/1.333), round(display.cols/1.75), 
         display.rows//4, round(display.cols/1.75), pink)
-    display.sleep(2,refreshslow)
+    display.sleep(2,optimize)
     # Clear screen and draw a filled pink triangle.
     display.fill(0)
     graphics.fill_triangle(display.rows//2, display.cols//3, 
         round(display.rows/1.333), round(display.cols/1.75), 
         display.rows//4, round(display.cols/1.75), pink)
-    display.sleep(2,refreshslow)
+    display.sleep(2,optimize)

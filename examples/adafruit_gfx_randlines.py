@@ -58,7 +58,7 @@ if rgbPins == []:
 #    unused_rgbPins = None
 
 rows = 2 ** (len(addrPins)+1)
-display = rgbmatrix_coopmt.RGBMatrix(rows,64,0,addrPins,rgbPins,clockPin,latchPin,OEPin,unused_rgbPins)
+display = rgbmatrix_coopmt.RGBMatrix(rows,64,addrPins,rgbPins,clockPin,latchPin,OEPin,unused_rgbPins)
 
 # Initialize the GFX library, giving it the display pixel function as its pixel
 # drawing primitive command.
