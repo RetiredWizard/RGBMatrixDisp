@@ -103,6 +103,12 @@ RGBMatrix.input() method which will refresh the display while waiting for user i
     the adafruit_gfx library with Micropython the Python source version should be downloaded from 
     github (https://github.com/adafruit/Adafruit_CircuitPython_GFX)   
 
+.. py:method:: RGBMatrix.**polygon(points, color=1)**
+
+    The points argument is a list of points that make up a polygon. Each point is a list consisting
+    of a row,col pair. The method will draw a straight line betweeen each of the points and then a
+    final straight line between the last point and the first point, closing the polygon.   
+
 .. py:method:: RGBMatrix.**circle(centrow,centcol,radius,color=1)**   
 
     Draws a circle of radius and color (0-7) centered at points (centrow,centcol). There is likely 

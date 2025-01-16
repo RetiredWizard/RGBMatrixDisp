@@ -70,8 +70,7 @@ class RGBMatrix:
         as the replace argument then only pixels that are currently the "replace" color will be
         replaced (filled) with the new "color" value. The swap parameter modifies the replace function
         by also replacing (filling) any existing pixels that were originally the "replace" color with
-        "color" pixels, essentially swapping the color on all pixels with either "color" or "replace"
-        colored pixels.
+        "color" pixels, essentially swapping the "color" and "replace" colored pixels.
 
     .. py:method:: RGBMatrix.fillarea(row,col,color)
 
@@ -123,6 +122,12 @@ class RGBMatrix:
         performance advanage of using this method over the adafruit_gfx.gfx line method. To use the
         adafruit_gfx library with Micropython the Python source version should be downloaded from 
         github (https://github.com/adafruit/Adafruit_CircuitPython_GFX)
+
+    .. py:method:: RGBMatrix.polygon(points, color=1)
+
+        The points argument is a list of points that make up a polygon. Each point is a list consisting of 
+        a row,col pair. The method will draw a straight line betweeen each of the points and then a final
+        straight line between the last point and the first point, closing the polygon.
 
     .. py:method:: RGBMatrix.circle(centrow,centcol,radius,color=1)
 
@@ -542,6 +547,13 @@ class RGBMatrix:
                 self._plotLineHigh(x1, y1, x0, y0, color)
             else:
                 self._plotLineHigh(x0, y0, x1, y1, color)
+
+    def polygon(self,points,color=1):
+        if len(points) > 1:
+            for i in range(1,len(points)):
+                self.line(points[i-1][0],points[i-1][1],points[i][0],points[i][1],color)
+
+            self.line(points[-1][0],points[-1][1],points[0][0],points[0][1],color)
 
     def _circleBres(self,centrow,centcol,row,col,color):
         self.point(centrow+row,centcol+col,color)
