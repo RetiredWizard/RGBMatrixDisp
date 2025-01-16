@@ -44,21 +44,20 @@ RGBMatrix.input() method which will refresh the display while waiting for user i
 
     Performs a non-blocking check to see if any UART input is available for processing   
 
-.. py:method:: RGBMatrix.**fill(color)**   
+.. py:method:: RGBMatrix.**fill(color,replace=None,swap=False)**   
 
     Colors all pixels the supplied "color". The color value can be 0-7. If a color value is passed
     as the replace argument then only pixels that are currently the "replace" color will be
     replaced (filled) with the new "color" value. The swap parameter modifies the replace function
     by also replacing (filling) any existing pixels that were originally the "replace" color with
-    "color" pixels, essentially swapping the color on all pixels with either "color" or "replace"
-    colored pixels.   
+    "color" pixels, essentially swapping the "color" and "replace" colored pixels.   
 
-.. py:method:: RGBMatrix.fillarea(row,col,color)
+.. py:method:: RGBMatrix.**fillarea(row,col,color)**
 
     Colors all pixels within a bounded area the supplied "color". The color value can be 0-7. The
-    background color being replaced is whatever color is at location (row,col). Any pixels which are the
-    background color are replaced until a pixel of a different color or the display border is
-    encountered. Filling proceeds outward from the (row,col) point.   
+    background color being replaced is whatever color is at location (row,col). Any pixels which
+    are the background color are replaced until a pixel of a different color or the display border
+    is encountered. Filling proceeds outward from the (row,col) point.   
 
 .. py:method:: RGBMatrix.**input(prompt=None,optimize=True,silent=False)**   
 
