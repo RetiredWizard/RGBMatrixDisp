@@ -64,9 +64,21 @@ class RGBMatrix:
 
         Performs a non-blocking check to see if any uart input is available for processing
 
-    .. py:method:: RGBMatrix.fill(color)
+    .. py:method:: RGBMatrix.fill(color,replace=None,swap=False)
 
-        Colors all pixels the given color. The color value can be 0-7.   
+        Colors all pixels the supplied "color". The color value can be 0-7. If a color value is passed
+        as the replace argument then only pixels that are currently the "replace" color will be
+        replaced (filled) with the new "color" value. The swap parameter modifies the replace function
+        by also replacing (filling) any existing pixels that were originally the "replace" color with
+        "color" pixels, essentially swapping the color on all pixels with either "color" or "replace"
+        colored pixels.
+
+    .. py:method:: RGBMatrix.fillarea(row,col,color)
+
+        Colors all pixels within a bounded area the supplied "color". The color value can be 0-7. The
+        background color being replaced is whatever color is at location (row,col). Any pixels which are the
+        background color are replaced until a pixel of a different color or the display border is
+        encountered. Filling proceeds outward from the (row,col) point.
 
     .. py:method:: RGBMatrix.input(prompt=None,optimize=True,silent=False)
 
@@ -232,12 +244,40 @@ class RGBMatrix:
         return retval
 
 
-    def fill(self,color):
+    def fill(self,color,replace=None,swap=False):
         for i in range(self.rows):
             for j in range(self.cols):
-                self._framebuffer[i][j] = color
-            if color == 0:
+                if replace is None or self._framebuffer[i][j] == replace:
+                    self._framebuffer[i][j] = color
+                elif replace is not None and swap and self._framebuffer[i][j] == color:
+                    self._framebuffer[i][j] = replace
+            if color == 0 and replace is None:
                 self.sendrow(i)
+
+    def fillarea(self,row,col,color=1):
+        if self._framebuffer[row][col] != color:
+            blankcolor = self._framebuffer[row][col]
+            self._framebuffer[row][col] = 255
+            done = False
+            while not done:
+                done = True
+                for i in range(self.rows):
+                    for j in range(self.cols):
+                        if self._framebuffer[i][j] == 255:
+                            if self._framebuffer[max(0,i-1)][j] == blankcolor:
+                                self._framebuffer[max(0,i-1)][j] = 255
+                                done = False
+                            if self._framebuffer[min(self.rows-1,i+1)][j] == blankcolor:
+                                self._framebuffer[min(self.rows-1,i+1)][j] = 255
+                                done = False
+                            if self._framebuffer[i][max(0,j-1)] == blankcolor:
+                                self._framebuffer[i][max(0,j-1)] = 255
+                                done = False
+                            if self._framebuffer[i][min(self.cols-1,j+1)] == blankcolor:
+                                self._framebuffer[i][min(self.cols-1,j+1)] = 255
+                                done = False
+                self.refresh(optimize=False)
+            self.fill(color,255)
 
     def input(self,prompt=None,optimize=True,silent=False):
 

@@ -52,9 +52,10 @@ while ans not in ['q','Q']:
             print(points[i])
 
     ans = ''
-    while ans not in ['p','P','l','L','q','Q','s','S','c','C']:
+    while ans not in ['p','P','l','L','q','Q','s','S','c','C','f','F','a','A']:
+        print('[f] fill/replace a color [a] fill an area')
         ans = matrix.input('[p] add point, [l] add line, [s] set color, [c] add circle, [q] quit: ')
-        if ans not in ['p','P','l','L','q','Q','s','s','c','C']:
+        if ans not in ['p','P','l','L','q','Q','s','s','c','C','f','F','a','A']:
             print('Invalid Entry!')
 
     if ans in ['p','P']:
@@ -109,7 +110,50 @@ while ans not in ['q','Q']:
                 print('Invalid Entry!')
 
             matrix.circle(row,col,radius,color)
-            
+    
+    elif ans in ['f','F']:
+        validentry = False
+        ans = ''
+        while not validentry:
+            ans = matrix.input('Enter FillColor[,ReplaceColor=None[,Swap=False]]: ')
+            try:
+                anslist = ans.split(',')
+                fillcolor = int(anslist[0])
+                replacecolor = None
+                swap = False
+                if len(anslist) == 2:
+                    replacecolor = int(anslist[1])
+                elif len(anslist) == 3:
+                    replacecolor = int(anslist[1])
+                    if type(anslist[2]) == str:
+                        swap =  anslist[2].upper() != 'FALSE'
+                    else:
+                        swap = int(anslist[2])
+                else:
+                    print('too many parameters')
+
+                validentry = True
+            except:
+                print('Invalid Entry!')
+
+            matrix.fill(fillcolor,replacecolor,swap)
+
+    if ans in ['a','A']:
+        validentry = False
+        ans = ''
+        while not validentry:
+            ans = matrix.input('Enter row,col,color: ')
+            try:
+                r,c,clr = ans.split(',')
+                row = int(r)
+                col = int(c)
+                color = int(clr)
+                validentry = True
+            except:
+                print('Invalid Entry!')
+        
+        matrix.fillarea(row,col,color)
+                    
     elif ans in ['q','Q']:
         matrix.deinit()
         
