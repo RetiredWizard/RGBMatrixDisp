@@ -72,12 +72,14 @@ class RGBMatrix:
         by also replacing (filling) any existing pixels that were originally the "replace" color with
         "color" pixels, essentially swapping the "color" and "replace" colored pixels.
 
-    .. py:method:: RGBMatrix.fillarea(row,col,color)
+    .. py:method:: RGBMatrix.fillarea(row,col,color,animate=False,optimize=True)
 
         Colors all pixels within a bounded area the supplied "color". The color value can be 0-7. The
         background color being replaced is whatever color is at location (row,col). Any pixels which are the
         background color are replaced until a pixel of a different color or the display border is
-        encountered. Filling proceeds outward from the (row,col) point.
+        encountered. Filling proceeds outward from the (row,col) point. If animate is to True the screen
+        will be refreshed as the fill occurs. The optimize parameter is used during the fill animation 
+        if enabled.
 
     .. py:method:: RGBMatrix.input(prompt=None,optimize=True,silent=False)
 
@@ -152,8 +154,6 @@ class RGBMatrix:
         self._framebuffer = []
         for i in range(self.rows):
             self._framebuffer.append(bytearray(self.cols))
-        self._prevShiftReg1 = None
-        self._prevShiftReg2 = None
 
         self._addrIO = []
         self._rgbIO = []
@@ -218,8 +218,6 @@ class RGBMatrix:
         self.fill(0)
 
         del self._framebuffer
-        del self._prevShiftReg1
-        del self._prevShiftReg2
 
         if implementation.name.upper() == "CIRCUITPYTHON":
             self._clockIO.deinit()
@@ -259,30 +257,34 @@ class RGBMatrix:
             if color == 0 and replace is None:
                 self.sendrow(i)
 
-    def fillarea(self,row,col,color=1):
+    def fillarea(self,row,col,color=1,animate=False,optimize=True):
         if self._framebuffer[row][col] != color:
             blankcolor = self._framebuffer[row][col]
-            self._framebuffer[row][col] = 255
+            if animate:
+                pixmark = 0xf8 | color
+            else:
+                pixmark = 0xf8 | blankcolor
+            self._framebuffer[row][col] = pixmark
             done = False
             while not done:
                 done = True
                 for i in range(self.rows):
                     for j in range(self.cols):
-                        if self._framebuffer[i][j] == 255:
+                        if self._framebuffer[i][j] == pixmark:
                             if self._framebuffer[max(0,i-1)][j] == blankcolor:
-                                self._framebuffer[max(0,i-1)][j] = 255
+                                self._framebuffer[max(0,i-1)][j] = pixmark
                                 done = False
                             if self._framebuffer[min(self.rows-1,i+1)][j] == blankcolor:
-                                self._framebuffer[min(self.rows-1,i+1)][j] = 255
+                                self._framebuffer[min(self.rows-1,i+1)][j] = pixmark
                                 done = False
                             if self._framebuffer[i][max(0,j-1)] == blankcolor:
-                                self._framebuffer[i][max(0,j-1)] = 255
+                                self._framebuffer[i][max(0,j-1)] = pixmark
                                 done = False
                             if self._framebuffer[i][min(self.cols-1,j+1)] == blankcolor:
-                                self._framebuffer[i][min(self.cols-1,j+1)] = 255
+                                self._framebuffer[i][min(self.cols-1,j+1)] = pixmark
                                 done = False
-                self.refresh(optimize=False)
-            self.fill(color,255)
+                self.refresh(optimize=optimize)
+            self.fill(color,pixmark)
 
     def input(self,prompt=None,optimize=True,silent=False):
 
@@ -330,24 +332,21 @@ class RGBMatrix:
                 row2 = row + rowrange
 
                 # If row is different than previous
-                if not optimize or self._framebuffer[row] != self._prevShiftReg1 or \
-                    self._framebuffer[row2] != self._prevShiftReg2:
-
-                    self._prevShiftReg1 = self._framebuffer[row]   # save latched row
-                    self._prevShiftReg2 = self._framebuffer[row2]
+                if not optimize or row == 0 or self._framebuffer[row] != self._framebuffer[row-1] or \
+                    self._framebuffer[row2] != self._framebuffer[row2-1]:
 
                     for col in range(self.cols):         # shift in row bits
                         shft = 1 << (self._numRGB-1)
-                        self._rgbIO[0].value = self._prevShiftReg1[col] & shft
-                        self._rgbIO[self._numRGB].value = self._prevShiftReg2[col] & shft
+                        self._rgbIO[0].value = self._framebuffer[row][col] & shft
+                        self._rgbIO[self._numRGB].value = self._framebuffer[row2][col] & shft
                         if shft > 1:
                             shft >>= 1
-                            self._rgbIO[1].value = self._prevShiftReg1[col] & shft
-                            self._rgbIO[1+self._numRGB].value = self._prevShiftReg2[col] & shft
+                            self._rgbIO[1].value = self._framebuffer[row][col] & shft
+                            self._rgbIO[1+self._numRGB].value = self._framebuffer[row2][col] & shft
                             if shft > 1:
                                 shft = 1
-                                self._rgbIO[2].value = self._prevShiftReg1[col] & shft
-                                self._rgbIO[2+self._numRGB].value = self._prevShiftReg2[col] & shft
+                                self._rgbIO[2].value = self._framebuffer[row][col] & shft
+                                self._rgbIO[2+self._numRGB].value = self._framebuffer[row2][col] & shft
                         self._clockIO.value = True
                         self._clockIO.value = False
 
@@ -375,24 +374,21 @@ class RGBMatrix:
                 row2 = row + rowrange
 
                 # If row is different than previous
-                if optimize and (self._framebuffer[row] != self._prevShiftReg1 or \
-                    self._framebuffer[row2] != self._prevShiftReg2):
-
-                    self._prevShiftReg1 = self._framebuffer[row]   # save latched row
-                    self._prevShiftReg2 = self._framebuffer[row2]
+                if not optimize or row == 0 or self._framebuffer[row] != self._framebuffer[row-1] or \
+                    self._framebuffer[row2] != self._framebuffer[row2-1]:
 
                     for col in range(self.cols):         # shift in row bits
                         shft = 1 << (self._numRGB-1)
-                        self._rgbIO[0].value(self._prevShiftReg1[col] & shft)
-                        self._rgbIO[self._numRGB].value(self._prevShiftReg2[col] & shft)
+                        self._rgbIO[0].value(self._framebuffer[row][col] & shft)
+                        self._rgbIO[self._numRGB].value(self._framebuffer[row2][col] & shft)
                         if shft > 1:
                             shft >>= 1
-                            self._rgbIO[1].value(self._prevShiftReg1[col] & shft)
-                            self._rgbIO[1+self._numRGB].value(self._prevShiftReg2[col] & shft)
+                            self._rgbIO[1].value(self._framebuffer[row][col] & shft)
+                            self._rgbIO[1+self._numRGB].value(self._framebuffer[row2][col] & shft)
                             if shft > 1:
                                 shft = 1
-                                self._rgbIO[2].value(self._prevShiftReg1[col] & shft)
-                                self._rgbIO[2+self._numRGB].value(self._prevShiftReg2[col] & shft)
+                                self._rgbIO[2].value(self._framebuffer[row][col] & shft)
+                                self._rgbIO[2+self._numRGB].value(self._framebuffer[row2][col] & shft)
                         self._clockIO.value(True)
                         self._clockIO.value(False)
 
@@ -416,7 +412,6 @@ class RGBMatrix:
             
 
     def sendrow(self,row):
-
         if implementation.name.upper() == "CIRCUITPYTHON":
             self._OEIO.value = False
 
@@ -427,20 +422,18 @@ class RGBMatrix:
                 row1 = row - (self._updaterows)
                 row2 = row
 
-            self._prevShiftReg1 = self._framebuffer[row1]
-            self._prevShiftReg2 = self._framebuffer[row2]
             for j in range(self.cols):
                 shft = 1 << (self._numRGB-1)
-                self._rgbIO[0].value = self._prevShiftReg1[j] & shft
-                self._rgbIO[self._numRGB].value = self._prevShiftReg2[j] & shft
+                self._rgbIO[0].value = self._framebuffer[row][j] & shft
+                self._rgbIO[self._numRGB].value = self._framebuffer[row2][j] & shft
                 if shft > 1:
                     shft >>= 1
-                    self._rgbIO[1].value = self._prevShiftReg1[j] & shft
-                    self._rgbIO[1+self._numRGB].value = self._prevShiftReg2[j] & shft
+                    self._rgbIO[1].value = self._framebuffer[row][j] & shft
+                    self._rgbIO[1+self._numRGB].value = self._framebuffer[row2][j] & shft
                     if shft > 1:
                         shft = 1
-                        self._rgbIO[2].value = self._prevShiftReg1[j] & shft
-                        self._rgbIO[2+self._numRGB].value = self._prevShiftReg2[j] & shft
+                        self._rgbIO[2].value = self._framebuffer[row][j] & shft
+                        self._rgbIO[2+self._numRGB].value = self._framebuffer[row2][j] & shft
                 self._clockIO.value = True
                 self._clockIO.value = False
 
@@ -463,20 +456,18 @@ class RGBMatrix:
                 row1 = row - (self._updaterows)
                 row2 = row
 
-            self._prevShiftReg1 = self._framebuffer[row1]
-            self._prevShiftReg2 = self._framebuffer[row2]
             for j in range(self.cols):
                 shft = 1 << (self._numRGB-1)
-                self._rgbIO[0].value(self._prevShiftReg1[j] & shft)
-                self._rgbIO[self._numRGB].value(self._prevShiftReg2[j] & shft)
+                self._rgbIO[0].value(self._framebuffer[row][j] & shft)
+                self._rgbIO[self._numRGB].value(self._framebuffer[row2][j] & shft)
                 if shft > 1:
                     shft >>= 1
-                    self._rgbIO[1].value(self._prevShiftReg1[j] & shft)
-                    self._rgbIO[1+self._numRGB].value(self._prevShiftReg2[j] & shft)
+                    self._rgbIO[1].value(self._framebuffer[row][j] & shft)
+                    self._rgbIO[1+self._numRGB].value(self._framebuffer[row2][j] & shft)
                     if shft > 1:
                         shft = 1
-                        self._rgbIO[2].value(self._prevShiftReg1[j] & shft)
-                        self._rgbIO[2+self._numRGB].value(self._prevShiftReg2[j] & shft)
+                        self._rgbIO[2].value(self._framebuffer[row][j] & shft)
+                        self._rgbIO[2+self._numRGB].value(self._framebuffer[row2][j] & shft)
                 self._clockIO.value(True)
                 self._clockIO.value(False)
 

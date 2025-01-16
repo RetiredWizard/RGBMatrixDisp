@@ -52,12 +52,13 @@ RGBMatrix.input() method which will refresh the display while waiting for user i
     by also replacing (filling) any existing pixels that were originally the "replace" color with
     "color" pixels, essentially swapping the "color" and "replace" colored pixels.   
 
-.. py:method:: RGBMatrix.**fillarea(row,col,color)**
+.. py:method:: RGBMatrix.**fillarea(row,col,color,animate=False,optimize=True)**
 
     Colors all pixels within a bounded area the supplied "color". The color value can be 0-7. The
     background color being replaced is whatever color is at location (row,col). Any pixels which
     are the background color are replaced until a pixel of a different color or the display border
-    is encountered. Filling proceeds outward from the (row,col) point.   
+    is encountered. Filling proceeds outward from the (row,col) point. If animate is to True the screen will be refreshed as the fill occurs. The optimize parameter is used during the fill
+    animation if enabled.   
 
 .. py:method:: RGBMatrix.**input(prompt=None,optimize=True,silent=False)**   
 

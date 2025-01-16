@@ -161,7 +161,7 @@ while ans not in ['q','Q']:
             except:
                 print('Invalid Entry!')
         
-        matrix.fillarea(row,col,color)
+        matrix.fillarea(row,col,color,True)
                     
     elif ans in ['q','Q']:
         matrix.deinit()
